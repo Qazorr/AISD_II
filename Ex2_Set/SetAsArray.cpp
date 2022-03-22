@@ -20,6 +20,8 @@ int main()
     
     try {
         //?-----1------
+        std::cout << "------------------1------------------\n";
+
         C = A+B;
         D = C-B;
         std::cout << "A = " << A << std::endl;
@@ -36,6 +38,7 @@ int main()
         std::cout << "D <= A: " << (D <= A) << std::endl;
 
         //?-----2------
+        std::cout << "------------------2------------------\n";
 
         A.Insert(5);
         AddingVisitor av;   
@@ -47,7 +50,38 @@ int main()
         E.Withdraw(1);
         E.Accept(av);
         std::cout << "Suma E = " << av.Result() << std::endl;
-        
+
+        //?-----3------
+        std::cout << "------------------3------------------\n";
+
+        OddVisitor ov;
+        std::cout << B << std::endl;
+        B.Accept(ov);
+        std::cout << "W B znajduje sie liczba parzysta: " << ov.OddFound() << std::endl;
+        ov.Reset();
+        std::cout << A << std::endl;
+        A.Accept(ov);
+        std::cout << "W A znajduje sie liczba parzysta: " << ov.OddFound() << std::endl;
+        ov.Reset();
+
+        A.Withdraw(1);
+        A.Withdraw(5);
+
+        A.Accept(ov);
+        std::cout << "W A znajduje sie liczba parzysta: " << ov.OddFound() << std::endl;
+        ov.Reset();
+
+        //?-----4------
+        std::cout << "------------------4------------------\n";
+
+        std::cout << A << std::endl;
+        A.IteratorPrint();
+        std::cout << std::endl;
+        std::cout << B << std::endl;
+        B.IteratorPrint();
+
+        std::cout << "-------------------------------------" << std::endl;
+
     } catch(std::out_of_range& ofr) {
         std::cout << ofr.what() << std::endl;
     }

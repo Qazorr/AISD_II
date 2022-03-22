@@ -1,19 +1,3 @@
-/**
- ** IsMember(x) 
- ** Insert(x)
- ** Withdraw(x)
- ** suma mnogościowa 2 zbiorów (A+B)
- ** roznica mnogosciowa (A-B)
- ** przeciecie (A * B)
- ** rownosc zbiorow ( == )
- ** zawieranie zbiorow ( <= )
- ** zbior uniwersalny ( size = n, wartosci [1;n-1] )
- {
-    tablica booli z sizem n-1, sprawdzamy czy pozycja zawiera true czy false 
- }
- ** konstruktor zawiera size zbioru uniwersalnego jako argument
-*/
-
 #include <iostream>
 #include <vector>
 
@@ -40,6 +24,26 @@ class AddingVisitor : public Visitor<int> {
             return tmp;
         }
         void Visit(int& el) { sum += el; }
+};
+
+class OddVisitor : public Visitor<int> {
+    private:
+        bool odd = false;
+    public:
+        void Visit(int& element) { if(element % 2) odd = true; }
+        bool IsDone() const { return odd; }
+        bool OddFound() const { return odd; }
+        void Reset() { odd = false; }
+};
+
+template <typename T>class Iterator
+{
+    public:
+        Iterator(){;}
+        virtual ~Iterator(){}
+        virtual bool IsDone()const = 0;
+        virtual const T& operator*() = 0;
+        virtual void operator++() = 0;
 };
 
 template <typename T>
@@ -72,6 +76,31 @@ public:
 class SetAsArray : public Set<int> {
     private:
         std::vector<bool> array;
+
+        class Iter:public Iterator<int>
+        {
+            private:
+                std::vector<bool> data;
+                int universeSize;
+                int index = 0;
+            public:
+                Iter(std::vector<bool> array, int us) : data(array), universeSize{us} 
+                {
+                    for(index = 0; index<universeSize; index++) {
+                        if(data[index]) break;
+                    }
+                }
+                ~Iter() = default;
+                const int& operator*() { return index; }
+                void operator++() 
+                {
+                    for(++index; index < universeSize; index++) {
+                        if(data[index]) break;
+                    }
+                }
+                bool IsDone() const { return index == universeSize; }
+        };
+
     public:
         SetAsArray(unsigned int n) : Set(n), array(n, false) {}
         bool IsFull() const { return Count() == UniverseSize(); }
@@ -172,9 +201,27 @@ class SetAsArray : public Set<int> {
             return ost;
         }
 
+        Iter & NewIterator() { return * new Iter(array, universeSize); }
+
+        void IteratorPrint()
+        {
+            Iter &it = NewIterator();
+            while(!it.IsDone()) {
+                std::cout << *it << " ";
+                ++it;
+            }
+            std::cout << std::endl;
+        }
+
         void Accept(Visitor<int>& v) const {
             for(int i = 0; i<universeSize; i++) {
-                if(array[i]) v.Visit(i);
+                if(array[i]) {
+                    v.Visit(i);
+                    if(v.IsDone()) {
+                        std::cout << "\tWizytacja skonczyla sie na komorce \033[32m" << i << "\033[0m\n";
+                        return;
+                    }
+                }
             }
         }
 };
