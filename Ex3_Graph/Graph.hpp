@@ -6,7 +6,7 @@ class Vertex
     private:
         int number{-1};
     public:
-        int weight{-1};
+        int weight{0};
         std::string label{"EMPTY"};
         Vertex(int n) : number{n} {}
         int Number() const { return number; };
@@ -25,7 +25,7 @@ class Edge
         Vertex* v0;
         Vertex* v1;
     public:
-        int weight{-1};
+        int weight{0};
         std::string label{"EMPTY"};
         Edge(Vertex* V0, Vertex* V1) : v0{V0}, v1{V1} {}
         Vertex* V0() { return v0; }
@@ -40,7 +40,7 @@ class Iterator
         Iterator(){;}
         virtual ~Iterator(){}
         virtual bool IsDone() const = 0;
-        virtual const T& operator*() = 0;
+        virtual T& operator*() = 0;
         virtual void operator++() = 0;
 };
 
@@ -60,7 +60,7 @@ class GraphAsMatrix
             int current{0};
         public:
             AllVerticesIter(GraphAsMatrix& owner): owner(owner) {};
-            bool IsDone() { return current >= owner.numberOfVertices; }
+            bool IsDone() const { return current >= owner.numberOfVertices; }
             Vertex& operator*() { return *(owner.vertices[current]); }
             void operator++() { ++current; }
     };
@@ -69,11 +69,22 @@ class GraphAsMatrix
         private:
             GraphAsMatrix& owner;
             int row, col;
+            bool end = false;
         public:
-            void next();
-            AllEdgesIter(GraphAsMatrix& owner);
-            bool IsDone();
-            Edge& operator*();
+            void next()
+            {
+                for(; row < owner.numberOfVertices; row++) {
+                    for(++col; col < owner.numberOfVertices; col++) {
+                        if(owner.adjacencyMatrix[row][col] != nullptr) 
+                            return;
+                    }
+                    col = -1;
+                }
+                end = true;
+            }
+            AllEdgesIter(GraphAsMatrix& owner): owner(owner), row{0}, col{0} { next(); }
+            bool IsDone() const { return end; }
+            Edge& operator*() { return *owner.SelectEdge(row,col); }
             void operator++(){ next(); }
     };
     class EmanEdgesIter: public Iterator<Edge>
@@ -82,11 +93,19 @@ class GraphAsMatrix
             GraphAsMatrix& owner;
             int row;
             int col;
-            public:
-            void next();
-            EmanEdgesIter(GraphAsMatrix& owner, int v);
-            bool IsDone();
-            Edge& operator*();
+            bool end = false;
+        public:
+            void next()
+            {
+                for(++col; col < owner.numberOfVertices; col++) {
+                    if(owner.adjacencyMatrix[row][col] != nullptr)
+                        return;
+                }
+                end = true;
+            }
+            EmanEdgesIter(GraphAsMatrix& owner, int u): owner(owner), row{u}, col{-1} { next(); }
+            bool IsDone() const { return end; }
+            Edge& operator*() { return *owner.SelectEdge(row,col); }
             void operator++() { next(); }
     };
     class InciEdgesIter: public Iterator<Edge>
@@ -95,10 +114,19 @@ class GraphAsMatrix
             GraphAsMatrix& owner;
             int row;
             int col;
-            void next();
-            InciEdgesIter(GraphAsMatrix& owner, int v);
-            bool IsDone();
-            Edge& operator*();
+            bool end = false;
+        public:
+            void next()
+            {
+                for(++row; row < owner.numberOfVertices; row++) {
+                    if(owner.adjacencyMatrix[row][col] != nullptr)
+                        return;
+                }
+                end = true;
+            }
+            InciEdgesIter(GraphAsMatrix& owner, int v): owner(owner), row{-1}, col{v} { next(); } 
+            bool IsDone() const { return end; }
+            Edge& operator*() { return *owner.SelectEdge(row,col); }
             void operator++(){ next(); }
     };
 
@@ -128,25 +156,25 @@ class GraphAsMatrix
         }
         void AddEdge(int u, int v)
         {
-            if(vertices[u] == nullptr) {
-                vertices[u] = new Vertex(u);
-                numberOfVertices++;
-            }
-
-            if(vertices[v] == nullptr) {
-                vertices[v] = new Vertex(v);
-                numberOfVertices++;
-            }
             if(!adjacencyMatrix[u][v]) {
                 adjacencyMatrix[u][v] = new Edge(vertices[u], vertices[v]);
                 numberOfEdges++;
             } 
-            if(!isDirected && adjacencyMatrix[v][u]) {
+            if(!isDirected && !adjacencyMatrix[v][u]) {
                 adjacencyMatrix[v][u] = new Edge(vertices[v], vertices[u]);
             }   
         }
         void AddEdge(Edge* edge)
         {
+            int u = edge->V0()->Number();
+            int v = edge->V1()->Number();
+            if(!adjacencyMatrix[u][v]) {
+                adjacencyMatrix[u][v] = new Edge(vertices[u], vertices[v]);
+                numberOfEdges++;
+            } 
+            if(!isDirected && !adjacencyMatrix[v][u]) {
+                adjacencyMatrix[v][u] = new Edge(vertices[v], vertices[u]);
+            }   
 
         }
         Edge* SelectEdge (int u, int v) { return adjacencyMatrix[u][v]; }
@@ -156,14 +184,54 @@ class GraphAsMatrix
         {
             for(int i = 0; i<numberOfVertices; i++) {
                 for(int j = 0; j<numberOfVertices; j++) {
-                    std::cout << (adjacencyMatrix[i][j] == nullptr ? "o" : "x") << " ";
+                    std::cout << (adjacencyMatrix[i][j] == nullptr ? "0" : "1") << " ";
                 }
                 std::cout << std::endl;
             }
         }
 
-        Iterator<Vertex>& VerticesIter();
-        Iterator<Edge>& EdgesIter();
-        Iterator<Edge>& EmanatingEdgesIter(int v);
-        Iterator<Edge>& IncidentEdgesIter(int v);
+        Iterator<Vertex>& VerticesIter() { return *(new AllVerticesIter(*this)); }
+        Iterator<Edge>& EdgesIter() { return *(new AllEdgesIter(*this)); }
+        Iterator<Edge>& EmanatingEdgesIter(int u) { return *(new EmanEdgesIter(*this, u)); }
+        Iterator<Edge>& IncidentEdgesIter(int v) { return *(new InciEdgesIter(*this, v)); }
+
+        void print_verticies()
+        {
+            auto& v_it = VerticesIter();
+            std::cout << "Verticies:\n";
+            while(!v_it.IsDone()) {
+                std::cout << "number = " << (*v_it).Number() << " | waga = " << (*v_it).weight << std::endl;
+                ++v_it;
+            }
+        }
+
+        void print_edges()
+        {
+            auto& e_it = EdgesIter();
+            std::cout << "Edges:" << std::endl;
+            while(!e_it.IsDone()) {
+                std::cout << "v0 = " << (*e_it).V0()->Number() << " " <<  "| v1 = " << (*e_it).V1()->Number() << std::endl;
+                ++e_it;
+            }
+        }
+
+        void print_em_edges(int u)
+        {
+            auto& ee_it = EmanatingEdgesIter(u);
+            std::cout << "Edges, wiersz " << u << std::endl;
+            while(!ee_it.IsDone()) {
+                std::cout << "v0 = " << (*ee_it).V0()->Number() << " " <<  "| v1 = " << (*ee_it).V1()->Number() << std::endl;
+                ++ee_it;
+            }
+        }
+
+        void print_in_edges(int v)
+        {
+            auto& ie_it = IncidentEdgesIter(v);
+            std::cout << "Edges, kolumna " << v << std::endl;
+            while(!ie_it.IsDone()) {
+                std::cout << "v0 = " << (*ie_it).V0()->Number() << " " <<  "| v1 = " << (*ie_it).V1()->Number() << std::endl;
+                ++ie_it;
+            }
+        }
 };
