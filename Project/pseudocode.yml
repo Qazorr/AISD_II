@@ -1,0 +1,14 @@
+DFS(graph, vertex):
+    oznacz wszystkie wierzchołki jako nieodwiedzone
+    ilosc_skladowych = 0
+    dopóki nie wszystkie wierzchołki zostały odwiedzone:
+        znajdź nieodwiedzony wierzchołek x
+        DFS1(x)
+        ilosc_skladowych++
+    zwróć ilość_składowych
+
+DFS1(vertex):
+    oznacz vertex jako odwiedzony
+    dla każdego u będącego sąsiadem vertex:
+        jeśli u jest nieodwiedzony:
+            DFS1(u)
