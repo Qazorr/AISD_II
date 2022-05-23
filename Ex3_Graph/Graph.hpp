@@ -162,6 +162,7 @@ class GraphAsMatrix
             } 
             if(!isDirected && !adjacencyMatrix[v][u]) {
                 adjacencyMatrix[v][u] = new Edge(vertices[v], vertices[u]);
+                numberOfEdges++;
             }   
         }
         void AddEdge(Edge* edge)
