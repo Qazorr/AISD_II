@@ -1,3 +1,3 @@
 # AiSD
 
-Zadania z kursu "Algorytmy i Struktury Danych I"
+Zadania z kursu "Algorytmy i Struktury Danych II"
